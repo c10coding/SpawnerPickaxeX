@@ -18,6 +18,9 @@ import org.bukkit.event.block.BlockPlaceEvent;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 
+import java.util.ArrayList;
+import java.util.List;
+
 public class SpawnerPickaxeListener implements Listener {
 
     private SpawnerPickaxeX plugin;
@@ -55,13 +58,18 @@ public class SpawnerPickaxeListener implements Listener {
         /*
             Sets the spawner type to whatever was in the display name
          */
-        if(e.getBlock().equals(Material.MOB_SPAWNER)){
+        if(e.getBlock().getType().equals(Material.MOB_SPAWNER)){
+
             Block spawnerBlock = e.getBlock();
             ItemStack spawner = e.getItemInHand();
-            String spawnerType = getSpawnerType(spawner.getItemMeta().getDisplayName());
-            CreatureSpawner cs = (CreatureSpawner) spawnerBlock;
-            cs.setSpawnedType(EntityType.valueOf(spawnerType));
-            spawnerBlock.getWorld().spawnParticle(Particle.SPELL_INSTANT, spawnerBlock.getLocation(), 10);
+            String displayName = spawner.getItemMeta().getDisplayName();
+            if(chatFactory.removeChatColor(displayName).equalsIgnoreCase("SpawnerPickaxeX Spawner")) {
+                String spawnerType = getSpawnerType(spawner.getItemMeta().getDisplayName());
+                CreatureSpawner cs = (CreatureSpawner) spawnerBlock;
+                cs.setSpawnedType(EntityType.valueOf(spawnerType));
+                spawnerBlock.getWorld().spawnParticle(Particle.SPELL_INSTANT, spawnerBlock.getLocation(), 10);
+            }
+
         }
     }
 
@@ -70,8 +78,14 @@ public class SpawnerPickaxeListener implements Listener {
      */
     public ItemStack getSpawner(EntityType spawnerType){
         ItemStack i = new ItemStack(Material.MOB_SPAWNER);
+
+        List<String> lore = new ArrayList<>();
+        lore.add(chatFactory.chat("&d&l" + spawnerType.getName()));
+
         ItemMeta meta = i.getItemMeta();
-        meta.setDisplayName(chatFactory.chat("&l[&7&l" + spawnerType.getName() + "&r&l]"));
+        meta.setDisplayName(chatFactory.chat("&o" + "SpawnerPickaxeX Spawner"));
+        meta.setLore(lore);
+
         i.setItemMeta(meta);
         return i;
     }

@@ -3,6 +3,7 @@ package me.c10coding.spawnerpickaxex.commands;
 import me.c10coding.coreapi.CoreAPI;
 import me.c10coding.coreapi.chat.Chat;
 import me.c10coding.spawnerpickaxex.SpawnerPickaxeX;
+import me.c10coding.spawnerpickaxex.files.ConfigManager;
 import org.bukkit.Bukkit;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
