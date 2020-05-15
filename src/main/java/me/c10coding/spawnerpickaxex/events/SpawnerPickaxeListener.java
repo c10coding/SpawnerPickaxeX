@@ -2,6 +2,7 @@ package me.c10coding.spawnerpickaxex.events;
 
 import me.c10coding.coreapi.chat.Chat;
 import me.c10coding.spawnerpickaxex.SpawnerPickaxeX;
+import me.c10coding.spawnerpickaxex.files.ConfigManager;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.Material;
@@ -12,9 +13,11 @@ import org.bukkit.enchantments.Enchantment;
 import org.bukkit.entity.EntityType;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
+import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.event.block.BlockPlaceEvent;
+import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 
@@ -34,21 +37,30 @@ public class SpawnerPickaxeListener implements Listener {
 
     @EventHandler
     public void onBlockBreak(BlockBreakEvent e){
+
         Player p = e.getPlayer();
         ItemStack itemInHand = p.getItemInHand();
         ItemMeta im = itemInHand.getItemMeta();
+        String itemDisplayName = chatFactory.removeChatColor(itemInHand.getItemMeta().getDisplayName());
+        String itemLoreLine = chatFactory.removeChatColor(im.getLore().get(0));
+        ConfigManager cm = new ConfigManager(plugin);
+
+        String configPickaxeName = chatFactory.removeChatColor(chatFactory.chat(cm.getPickaxeDisplayName()));
+        String firstLoreLine = chatFactory.removeChatColor(chatFactory.chat(cm.getPickaxeLore().get(0)));
+
         Block b = e.getBlock();
-        if(im.getDisplayName().equalsIgnoreCase("&bSpawner Pickaxe")){
-            if(im.getLore().get(0).equalsIgnoreCase("&6&lOne use")){
-                if(b.getType().equals(Material.MOB_SPAWNER)){
-                    e.setCancelled(true);
+
+        if(itemDisplayName.equalsIgnoreCase(configPickaxeName)){
+            if(itemLoreLine.equalsIgnoreCase(firstLoreLine)) {
+                if (b.getType().equals(Material.MOB_SPAWNER)) {
                     //Breaks the pickaxe
                     itemInHand.setDurability(Material.DIAMOND_PICKAXE.getMaxDurability());
                     CreatureSpawner cs = (CreatureSpawner) b.getState();
                     p.getInventory().addItem(getSpawner(cs.getSpawnedType()));
+                } else {
+                    e.setCancelled(true);
+                    chatFactory.sendPlayerMessage("You cannot use this pickaxe on anything but spawners!", true, p, plugin.getPrefix());
                 }
-            }else{
-                chatFactory.sendPlayerMessage("You cannot use this pickaxe on anything but spawners!", true, p, plugin.getPrefix());
             }
         }
     }
@@ -62,17 +74,23 @@ public class SpawnerPickaxeListener implements Listener {
 
             Block spawnerBlock = e.getBlock();
             ItemStack spawner = e.getItemInHand();
-            String displayName = spawner.getItemMeta().getDisplayName();
-            if(chatFactory.removeChatColor(displayName).equalsIgnoreCase("SpawnerPickaxeX Spawner")) {
-                String spawnerType = getSpawnerType(spawner.getItemMeta().getDisplayName());
-                CreatureSpawner cs = (CreatureSpawner) spawnerBlock;
+            String displayName = chatFactory.removeChatColor(spawner.getItemMeta().getDisplayName());
+            if(displayName.equalsIgnoreCase("[Spawner]")) {
+                String spawnerType = chatFactory.removeChatColor(spawner.getItemMeta().getLore().get(0)).toUpperCase();
+                CreatureSpawner cs = (CreatureSpawner) spawnerBlock.getState();
                 cs.setSpawnedType(EntityType.valueOf(spawnerType));
-                spawnerBlock.getWorld().spawnParticle(Particle.SPELL_INSTANT, spawnerBlock.getLocation(), 10);
+                cs.update(true);
+                spawnerBlock.getWorld().spawnParticle(Particle.DRAGON_BREATH, spawnerBlock.getLocation(), 10);
             }
-
         }
     }
 
+    @EventHandler(priority = EventPriority.LOWEST)
+    public void denyMobSpawnerChange(PlayerInteractEvent event) {
+        if ((event.getClickedBlock() != null) && (event.getItem() != null) && (event.getClickedBlock().getType() == Material.MOB_SPAWNER) && (event.getItem().getType() == Material.MONSTER_EGG))
+            if (!event.getPlayer().isOp())
+                event.setCancelled(true);
+    }
     /*
     Upon mining the block, gives a spawner with a specific display name
      */
@@ -83,15 +101,11 @@ public class SpawnerPickaxeListener implements Listener {
         lore.add(chatFactory.chat("&d&l" + spawnerType.getName()));
 
         ItemMeta meta = i.getItemMeta();
-        meta.setDisplayName(chatFactory.chat("&o" + "SpawnerPickaxeX Spawner"));
+        meta.setDisplayName(chatFactory.chat("&d&o[Spawner]"));
         meta.setLore(lore);
 
         i.setItemMeta(meta);
         return i;
-    }
-
-    public String getSpawnerType(String displayName){
-        return ChatColor.stripColor(displayName).replace("[", "").replace("]", "");
     }
 
 }

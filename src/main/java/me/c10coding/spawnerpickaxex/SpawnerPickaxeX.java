@@ -10,20 +10,24 @@ import me.c10coding.spawnerpickaxex.events.SpawnerPickaxeListener;
 import me.c10coding.spawnerpickaxex.files.ConfigManager;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
-import org.bukkit.configuration.file.FileConfiguration;
+import org.bukkit.enchantments.Enchantment;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.plugin.java.JavaPlugin;
 
-import java.util.ArrayList;
+import java.io.File;
+import java.lang.reflect.Field;
 import java.util.List;
+import java.util.logging.Logger;
 
 public final class SpawnerPickaxeX extends JavaPlugin {
 
     @Inject private CoreAPI api = new CoreAPI();
     private final String PREFIX = api.getChatFactory().chat("&l[&b&l" + this.getName() + "&r&l]");
     private ConfigManager configManager;
+    private Logger pluginLogger = this.getLogger();
+    public static EmptyEnchant enchant;
 
     @Override
     public void onEnable() {
@@ -33,8 +37,18 @@ public final class SpawnerPickaxeX extends JavaPlugin {
         injector.injectMembers(this);
         configManager = new ConfigManager(this);
 
+        File configFile = new File(this.getDataFolder(), "config.yml");
+
+        if(!configFile.exists()){
+            this.saveResource("config.yml", false);
+        }
+
+        enchant = new EmptyEnchant();
+        registerEnchantment(enchant);
+
         new Commands(this);
         new SpawnerPickaxeListener(this);
+
     }
 
     @Override
@@ -65,14 +79,34 @@ public final class SpawnerPickaxeX extends JavaPlugin {
             lore.set(x, chatFactory.chat(lore.get(x)));
         }
 
+        itemMeta.addEnchant(enchant, 1, false);
         //Uses chat factory to translate the color codes into actual colors
         itemMeta.setDisplayName(chatFactory.chat(configManager.getPickaxeDisplayName()));
-        itemMeta.setLore(configManager.getPickaxeLore());
+        itemMeta.setLore(lore);
         item.setItemMeta(itemMeta);
 
         player.getInventory().addItem(item);
 
     }
+
+    public void registerEnchantment(Enchantment ench) {
+        boolean registered = true;
+        //Using Reflection
+        try {
+            Field f = Enchantment.class.getDeclaredField("acceptingNew");
+            f.setAccessible(true);
+            f.set(null, true);
+            Enchantment.registerEnchantment(ench);
+            pluginLogger.info("Registering enchant...");
+        }catch(Exception e) {
+            pluginLogger.info("Enchantment is already registered. Ignoring...");
+        }
+        /*
+        if(registered) {
+            Bukkit.broadcastMessage(ench.getName());
+        }*/
+    }
+
 
 
 }
